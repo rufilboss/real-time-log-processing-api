@@ -2,6 +2,7 @@ FROM python:3.9-slim
 
 # Set environment variables to avoid Python buffering output
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -12,7 +13,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the source code into the container
-COPY ./app /app
+COPY ./app .
 
 # Expose the FastAPI default port
 EXPOSE 8000
