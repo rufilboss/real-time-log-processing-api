@@ -1,10 +1,11 @@
+import celery
 from celery import Celery
 
 # Configure Celery to use Redis as the broker
 celery_app = Celery(
     "log_processing",
-    broker="redis://localhost:6379/0",  # Default Redis connection for local development
-    backend="redis://localhost:6379/0",  # Result backend for task tracking
+    broker="redis://localhost:6379/0",
+    backend="redis://localhost:6379/0",
 )
 
 celery_app.conf.update(
