@@ -2,7 +2,6 @@ FROM python:3.9-slim
 
 # Set environment variables to avoid Python buffering output
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
 
 # Set the working directory inside the container
 WORKDIR /app

@@ -11,6 +11,7 @@ services:
       - "8000:8000"
     depends_on:
       - redis
+      - mongo
     environment:
       - MONGO_DETAILS=mongodb://mongo:27017
 
@@ -22,6 +23,7 @@ services:
     container_name: celery_worker
     depends_on:
       - redis
+      - mongo
     environment:
       - MONGO_DETAILS=mongodb://mongo:27017
       - CELERY_BROKER_URL=redis://redis:6379/0

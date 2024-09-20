@@ -2,7 +2,7 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 from typing import Union
 import motor.motor_asyncio
-from celery_config.result import AsyncResult
+# from celery_config.result import AsyncResult
 
 # Import Celery and the processing task
 from app.celery_config import celery_app
