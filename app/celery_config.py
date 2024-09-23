@@ -1,4 +1,3 @@
-import celery
 from celery import Celery
 
 # Configure Celery to use Redis as the broker

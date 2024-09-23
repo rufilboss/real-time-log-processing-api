@@ -2,24 +2,20 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 from typing import Union
 import motor.motor_asyncio
-# from celery_config.result import AsyncResult
-
-# Import Celery and the processing task
 from app.celery_config import celery_app
-from app.tasks import process_log
+from app.tasks import process_log 
+from celery.result import AsyncResult
 
 app = FastAPI()
 
-# MongoDB connection settings
+# MongoDB connection
 client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://localhost:27017")
 db = client.log_database
 log_collection = db.logs
 
-
 # Model for JSON log input (for validation)
 class LogModel(BaseModel):
     log_data: Union[dict, str]  # Log data can be JSON or plain string
-
 
 # POST endpoint to receive and store logs
 @app.post("/logs")
@@ -48,20 +44,18 @@ async def receive_log(log: LogModel, background_tasks: BackgroundTasks):
 
     return {"status": "Log stored and processing", "log_id": log_id}
 
-
 # Endpoint to check task status
 @app.get("/task/{task_id}")
 def get_task_status(task_id: str):
     """
     Endpoint to check the status of a Celery background task.
     """
-    task_result = AsyncResult(task_id)
+    task_result = AsyncResult(task_id)  # Fixed import
     return {
         "task_id": task_id,
         "status": task_result.status,
         "result": task_result.result if task_result.ready() else None
     }
-
 
 # Health check route
 @app.get("/")

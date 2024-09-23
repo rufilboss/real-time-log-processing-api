@@ -1,5 +1,5 @@
 from celery.utils.log import get_task_logger
-from app.celery_config import shared_task
+from app.celery_config import celery_app 
 import re
 
 # Initialize Celery logger
@@ -10,7 +10,7 @@ EMAIL_REGEX = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 PHONE_REGEX = r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b'
 
 # Celery task to process and filter logs (e.g., remove sensitive info)
-@shared_task(name="tasks.process_log")
+@celery_app.task(name="tasks.process_log")
 def process_log(log_data: dict) -> dict:
     """
     Task to process the log data by removing sensitive information such as emails and phone numbers.
