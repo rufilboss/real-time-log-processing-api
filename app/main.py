@@ -1,6 +1,7 @@
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 from typing import Union
+from bson import ObjectId
 import motor.motor_asyncio
 from app.celery_config import celery_app
 from app.tasks import process_log 
@@ -9,7 +10,7 @@ from celery.result import AsyncResult
 app = FastAPI()
 
 # MongoDB connection
-client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://localhost:27017")
+client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://mongo:27017")
 db = client.log_database
 log_collection = db.logs
 
@@ -17,7 +18,7 @@ log_collection = db.logs
 class LogModel(BaseModel):
     log_data: Union[dict, str]  # Log data can be JSON or plain string
 
-# POST endpoint to receive and store logs
+# # POST endpoint to receive and store logs
 @app.post("/logs")
 async def receive_log(log: LogModel, background_tasks: BackgroundTasks):
     """
@@ -31,18 +32,29 @@ async def receive_log(log: LogModel, background_tasks: BackgroundTasks):
         inserted_log = await log_collection.insert_one(log_data)
         log_id = str(inserted_log.inserted_id)
 
-        # Asynchronously process the log (e.g., remove sensitive data)
-        background_tasks.add_task(process_log.delay, log_data)
+        # Start Celery task asynchronously and get the task_id
+        log_data["_id"] = log_id 
+        task = process_log.delay(log_data)
+        task_id = task.id 
+
+        # Add the task to background processing
+        background_tasks.add_task(task.get)
 
     # Case 2: Non-JSON log (string)
     elif isinstance(log_data, str):
         # Handle non-JSON logs (if necessary, you can expand this later)
-        pass
+        task_id = None
+        log_id = None
 
     else:
         raise HTTPException(status_code=400, detail="Invalid log format")
 
-    return {"status": "Log stored and processing", "log_id": log_id}
+    # Return the task_id along with the log_id
+    return {
+        "status": "Log stored and processing...", 
+        "log_id": log_id, 
+        "task_id": task_id
+    }
 
 # Endpoint to check task status
 @app.get("/task/{task_id}")
@@ -50,7 +62,7 @@ def get_task_status(task_id: str):
     """
     Endpoint to check the status of a Celery background task.
     """
-    task_result = AsyncResult(task_id)  # Fixed import
+    task_result = AsyncResult(task_id)
     return {
         "task_id": task_id,
         "status": task_result.status,
