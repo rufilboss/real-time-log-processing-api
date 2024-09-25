@@ -6,7 +6,6 @@ import motor.motor_asyncio
 from app.celery_config import celery_app
 from app.tasks import process_log 
 from celery.result import AsyncResult
-# from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
@@ -43,7 +42,6 @@ async def receive_log(log: LogModel, background_tasks: BackgroundTasks):
 
     # Case 2: Non-JSON log (string)
     elif isinstance(log_data, str):
-        # Handle non-JSON logs (if necessary, you can expand this later)
         task_id = None
         log_id = None
 
@@ -57,19 +55,7 @@ async def receive_log(log: LogModel, background_tasks: BackgroundTasks):
         "task_id": task_id
     }
 
-# Endpoint to check task status
-# @app.get("/task/{task_id}")
-# def get_task_status(task_id: str):
-#     """
-#     Endpoint to check the status of a Celery background task.
-#     """
-#     task_result = AsyncResult(task_id)
-#     return {
-#         "task_id": task_id,
-#         "status": task_result.status,
-#         "result": task_result.result if task_result.ready() else None
-#     }
-    
+# Endpoint to check task status 
 @app.get("/task/{task_id}")
 def get_task_status(task_id: str):
     """

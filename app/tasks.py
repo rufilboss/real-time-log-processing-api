@@ -20,7 +20,7 @@ def process_log(log_data: dict) -> dict:
     """
     logger.info("Starting log processing task.")
     
-    # Remove sensitive information from log fields
+    # Removing sensitive information from log fields
     for key, value in log_data.items():
         if isinstance(value, str):
             log_data[key] = re.sub(EMAIL_REGEX, "[REDACTED_EMAIL]", value)
