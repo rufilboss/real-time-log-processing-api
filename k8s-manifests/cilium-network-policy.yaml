@@ -1,0 +1,17 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: log-processing-network-policy
+spec:
+  endpointSelector:
+    matchLabels:
+      app: log-processing-app
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: log-processing-app
+  egress:
+    - toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP

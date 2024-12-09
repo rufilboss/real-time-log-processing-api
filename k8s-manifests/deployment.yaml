@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-processing-app
+  labels:
+    app: log-processing-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: log-processing-app
+  template:
+    metadata:
+      labels:
+        app: log-processing-app
+    spec:
+      containers:
+        - name: app-container
+          image: asruf/log-processing-api:latest
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
