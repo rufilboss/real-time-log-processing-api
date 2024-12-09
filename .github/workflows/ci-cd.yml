@@ -21,13 +21,21 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Push Docker Image
+      - name: Build and Push FastAPI Docker Image
         uses: docker/build-push-action@v4
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: <your-dockerhub-username>/log-processing-api:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/log-processing-api:latest
+
+      - name: Build and Push Celery Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile.celery
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/celery:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -47,4 +55,3 @@ jobs:
         run: |
           kubectl apply -f k8s-manifests/
           kubectl rollout status deployment/log-processing-app
-          
