@@ -62,3 +62,12 @@ serviceMonitor:
 networkPolicy:
   enabled: true
 
+alerts:
+  enabled: true
+  errorRateThreshold: 2 # percent
+  latencyP95Threshold: 0.5 # seconds
+  cpuSaturationThreshold: 90 # percent
+
+grafanaDashboard:
+  enabled: false
+

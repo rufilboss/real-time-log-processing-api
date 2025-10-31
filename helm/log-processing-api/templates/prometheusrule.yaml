@@ -1,0 +1,47 @@
+{{- if .Values.alerts.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "log-processing-api.fullname" . }}
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: api.rules
+      rules:
+        - alert: HighErrorRate
+          expr: |
+            sum(rate(http_requests_total{job="{{ include "log-processing-api.fullname" . }}",status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="{{ include "log-processing-api.fullname" . }}"}[5m])) * 100 > {{ .Values.alerts.errorRateThreshold }}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High 5xx error rate"
+            description: "> {{ .Values.alerts.errorRateThreshold }}% errors for 5m"
+
+        - alert: HighLatencyP95
+          expr: |
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket{job="{{ include "log-processing-api.fullname" . }}"}[5m])) by (le)
+            ) > {{ .Values.alerts.latencyP95Threshold }}
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "p95 latency too high"
+            description: "> {{ .Values.alerts.latencyP95Threshold }}s p95 for 10m"
+
+        - alert: CpuSaturation
+          expr: |
+            avg(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~".+", pod=~"{{ include "log-processing-api.fullname" . }}.*"})
+            by () * 100 > {{ .Values.alerts.cpuSaturationThreshold }}
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CPU usage high"
+            description: "> {{ .Values.alerts.cpuSaturationThreshold }}% for 10m"
+{{- end }}
+
