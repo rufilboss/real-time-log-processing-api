@@ -65,6 +65,8 @@ Ensure you have the following installed on your machine:
 2. Create a `.env` file in the root of the project (if needed), specifying environment variables for the API, MongoDB, Redis, etc. Example:
 
    ```sh
+   APP_NAME=real-time-log-processing-api
+   LOG_LEVEL=INFO
    MONGO_URI=mongodb://mongo:27017/log_database
    REDIS_URL=redis://redis:6379/0
    ```
