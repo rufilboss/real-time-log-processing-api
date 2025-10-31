@@ -1,14 +1,19 @@
-FROM python:3.9-slim
-
-ENV PYTHONUNBUFFERED=1
-
+FROM python:3.11-slim AS base
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 WORKDIR /app
 
-COPY requirements.txt .
+FROM base AS builder
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt ./
+RUN pip install --upgrade pip && pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
 
-RUN pip install --no-cache-dir -r requirements.txt
-
+FROM base AS runtime
+RUN addgroup --system app && adduser --system --ingroup app app
+COPY --from=builder /wheels /wheels
+RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
 COPY . .
+USER app
 
 # Command to start the Celery worker
 CMD ["celery", "-A", "app.celery_config", "worker", "--loglevel=info"]

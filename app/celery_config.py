@@ -1,10 +1,11 @@
 from celery import Celery
+from app.settings import settings
 
 # Configure Celery to use Redis as the broker
 celery_app = Celery(
     "log_processing",
-    broker="redis://redis:6379/0",
-    backend="redis://redis:6379/0",
+    broker=settings.redis_url,
+    backend=settings.redis_url,
 )
 
 celery_app.conf.update(

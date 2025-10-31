@@ -1,17 +1,19 @@
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 from typing import Union
-from bson import ObjectId
 import motor.motor_asyncio
 from app.celery_config import celery_app
 from app.tasks import process_log 
 from celery.result import AsyncResult
+from app.settings import settings
+from prometheus_fastapi_instrumentator import Instrumentator
+import logging
 
-app = FastAPI()
+app = FastAPI(title=settings.app_name)
 
-# MongoDB connection
-client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://mongo:27017")
-db = client.log_database
+# MongoDB connection (database extracted from URI or default)
+client = motor.motor_asyncio.AsyncIOMotorClient(settings.mongo_uri)
+db = client.get_default_database() if client.get_default_database() else client.log_database
 log_collection = db.logs
 
 # Model for JSON log input (for validation)
@@ -72,7 +74,26 @@ def get_task_status(task_id: str):
         "result": task_result.result if task_result.ready() else None
     }
 
-# Health check route
+# Instrumentation: expose Prometheus metrics at /metrics
+Instrumentator().instrument(app).expose(app)
+
+
 @app.get("/")
 async def root():
-    return {"message": "API is operational"}
+    return {"message": "API is operational", "app": settings.app_name}
+
+
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
+
+
+@app.get("/readyz")
+async def readyz():
+    # Quick readiness check by pinging Redis via Celery broker URL parse is heavy; keep simple
+    # and verify Mongo driver is initialized
+    try:
+        await db.command("ping")
+    except Exception:
+        raise HTTPException(status_code=503, detail="Mongo not ready")
+    return {"status": "ready"}
