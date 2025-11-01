@@ -163,3 +163,8 @@ This project demonstrates a microservice-based architecture for real-time log pr
 ## LICENSE
 
 [MIT](License)
+
+helm upgrade --install logs ./helm/log-processing-api \
+  --set serviceMonitor.enabled=true \
+  --set alerts.enabled=true \
+  --set grafanaDashboard.enabled=true
