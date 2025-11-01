@@ -168,3 +168,4 @@ helm upgrade --install logs ./helm/log-processing-api \
   --set serviceMonitor.enabled=true \
   --set alerts.enabled=true \
   --set grafanaDashboard.enabled=true
+  

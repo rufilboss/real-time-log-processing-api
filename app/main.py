@@ -1,4 +1,6 @@
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Request, Form
+from fastapi.responses import HTMLResponse
+from starlette.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import Union
 import motor.motor_asyncio
@@ -8,8 +10,14 @@ from celery.result import AsyncResult
 from app.settings import settings
 from prometheus_fastapi_instrumentator import Instrumentator
 import logging
+import json
 
 app = FastAPI(title=settings.app_name)
+
+# Templates for UI
+import os
+template_dir = os.path.join(os.path.dirname(__file__), "templates")
+templates = Jinja2Templates(directory=template_dir)
 
 # MongoDB connection (database extracted from URI or default)
 client = motor.motor_asyncio.AsyncIOMotorClient(settings.mongo_uri)
@@ -78,9 +86,16 @@ def get_task_status(task_id: str):
 Instrumentator().instrument(app).expose(app)
 
 
-@app.get("/")
-async def root():
-    return {"message": "API is operational", "app": settings.app_name}
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    """Main dashboard UI"""
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/ui/submit")
+async def ui_submit_form():
+    """Redirect for GET requests to submit"""
+    return {"message": "Use POST to submit logs"}
 
 
 @app.get("/healthz")
@@ -97,3 +112,107 @@ async def readyz():
     except Exception:
         raise HTTPException(status_code=503, detail="Mongo not ready")
     return {"status": "ready"}
+
+
+# UI Routes
+@app.post("/ui/submit", response_class=HTMLResponse)
+async def ui_submit(request: Request, log_data: str = Form(...)):
+    """Submit log from UI form"""
+    try:
+        # Parse JSON from form
+        log_dict = json.loads(log_data)
+        
+        # Store in MongoDB
+        inserted_log = await log_collection.insert_one(log_dict)
+        log_id = str(inserted_log.inserted_id)
+        
+        # Start Celery task
+        log_dict["_id"] = log_id
+        task = process_log.delay(log_dict)
+        task_id = task.id
+        
+        return templates.TemplateResponse(
+            "result_message.html",
+            {
+                "request": request,
+                "success": True,
+                "message": "Log submitted successfully",
+                "log_id": log_id,
+                "task_id": task_id
+            }
+        )
+    except json.JSONDecodeError:
+        return templates.TemplateResponse(
+            "result_message.html",
+            {
+                "request": request,
+                "success": False,
+                "message": "Invalid JSON format"
+            }
+        )
+    except Exception as e:
+        return templates.TemplateResponse(
+            "result_message.html",
+            {
+                "request": request,
+                "success": False,
+                "message": f"Error: {str(e)}"
+            }
+        )
+
+
+@app.get("/ui/logs", response_class=HTMLResponse)
+async def ui_logs(request: Request):
+    """Get recent logs for UI"""
+    try:
+        # Fetch last 10 logs
+        cursor = log_collection.find().sort("_id", -1).limit(10)
+        logs = await cursor.to_list(length=10)
+        
+        # Convert ObjectId to string and prepare JSON strings for display
+        logs_with_json = []
+        for log in logs:
+            if "_id" in log:
+                log["_id"] = str(log["_id"])
+            log_json = json.dumps(log, indent=2, default=str)
+            logs_with_json.append({"log": log, "log_json": log_json})
+        
+        return templates.TemplateResponse("logs_list.html", {"request": request, "logs": logs_with_json})
+    except Exception as e:
+        return templates.TemplateResponse(
+            "logs_list.html",
+            {"request": request, "logs": None, "error": str(e)}
+        )
+
+
+@app.get("/ui/task-status", response_class=HTMLResponse)
+async def ui_task_status(request: Request, task_id: str):
+    """Get task status for UI"""
+    try:
+        task_result = AsyncResult(task_id, app=celery_app)
+        
+        if task_result is None:
+            return templates.TemplateResponse(
+                "task_status.html",
+                {"request": request, "task": None}
+            )
+        
+        result = task_result.result if task_result.ready() else None
+        task_result_json = json.dumps(result, indent=2, default=str) if result else None
+        
+        task_data = {
+            "task_id": task_id,
+            "status": task_result.status,
+            "result": result,
+            "result_json": task_result_json
+        }
+        
+        return templates.TemplateResponse(
+            "task_status.html",
+            {"request": request, "task": task_data}
+        )
+    except Exception as e:
+        return templates.TemplateResponse(
+            "task_status.html",
+            {"request": request, "task": None, "error": str(e)}
+        )
