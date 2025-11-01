@@ -1,0 +1,7 @@
+apiVersion: v2
+name: log-processing-api
+description: Helm chart for Real-Time Log Processing API (FastAPI + Celery)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+

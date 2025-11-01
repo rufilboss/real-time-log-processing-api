@@ -65,6 +65,8 @@ Ensure you have the following installed on your machine:
 2. Create a `.env` file in the root of the project (if needed), specifying environment variables for the API, MongoDB, Redis, etc. Example:
 
    ```sh
+   APP_NAME=real-time-log-processing-api
+   LOG_LEVEL=INFO
    MONGO_URI=mongodb://mongo:27017/log_database
    REDIS_URL=redis://redis:6379/0
    ```
@@ -161,3 +163,9 @@ This project demonstrates a microservice-based architecture for real-time log pr
 ## LICENSE
 
 [MIT](License)
+
+helm upgrade --install logs ./helm/log-processing-api \
+  --set serviceMonitor.enabled=true \
+  --set alerts.enabled=true \
+  --set grafanaDashboard.enabled=true
+  

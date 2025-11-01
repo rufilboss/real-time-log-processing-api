@@ -1,0 +1,17 @@
+<div class="space-y-2 max-h-96 overflow-y-auto">
+    {% if logs %}
+        {% for item in logs %}
+        <div class="border border-gray-200 rounded-md p-3 hover:bg-gray-50">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <pre class="text-sm font-mono text-gray-800 break-all whitespace-pre-wrap">{{ item.log_json }}</pre>
+                    <p class="text-xs text-gray-500 mt-1">ID: {{ item.log.get('_id', 'N/A') }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <p class="text-gray-500 text-center py-4">No logs found</p>
+    {% endif %}
+</div>
+

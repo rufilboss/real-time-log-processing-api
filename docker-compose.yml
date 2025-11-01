@@ -13,8 +13,9 @@ services:
       - redis
       - mongo
     environment:
-      - MONGO_DETAILS=mongodb://mongo:27017
-      - REDIS_HOST=redis
+      - APP_NAME=real-time-log-processing-api
+      - MONGO_URI=mongodb://mongo:27017/log_database
+      - REDIS_URL=redis://redis:6379/0
 
   # Celery Worker
   celery:
@@ -26,9 +27,8 @@ services:
       - redis
       - mongo
     environment:
-      - MONGO_DETAILS=mongodb://mongo:27017
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - REDIS_HOST=redis
+      - MONGO_URI=mongodb://mongo:27017/log_database
+      - REDIS_URL=redis://redis:6379/0
 
   # Redis for message queuing
   redis:
