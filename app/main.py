@@ -45,9 +45,15 @@ async def receive_log(log: LogModel, background_tasks: BackgroundTasks):
         log_id = str(inserted_log.inserted_id)
 
         # Start Celery task asynchronously and get the task_id
-        log_data["_id"] = log_id 
-        task = process_log.delay(log_data)
-        task_id = task.id 
+        # Convert to JSON-serializable format for Celery (remove MongoDB ObjectId)
+        log_data_for_task = json.loads(json.dumps(log_data, default=str))
+        log_data_for_task["_id"] = log_id
+        try:
+            task = celery_app.send_task("app.tasks.process_log", args=[log_data_for_task])
+            task_id = task.id
+        except Exception as e:
+            logging.error(f"Failed to send Celery task: {e}")
+            task_id = None
 
         # Add the task to background processing
         background_tasks.add_task(task.get)
@@ -128,9 +134,10 @@ async def ui_submit(request: Request, log_data: str = Form(...)):
         inserted_log = await log_collection.insert_one(log_dict)
         log_id = str(inserted_log.inserted_id)
         
-        # Start Celery task
-        log_dict["_id"] = log_id
-        task = process_log.delay(log_dict)
+        # Start Celery task (ensure JSON serializable)
+        log_dict_for_task = json.loads(json.dumps(log_dict, default=str))
+        log_dict_for_task["_id"] = log_id
+        task = celery_app.send_task("app.tasks.process_log", args=[log_dict_for_task])
         task_id = task.id
         
         return templates.TemplateResponse(
