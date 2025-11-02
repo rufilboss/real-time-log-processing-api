@@ -21,7 +21,9 @@ templates = Jinja2Templates(directory=template_dir)
 
 # MongoDB connection (database extracted from URI or default)
 client = motor.motor_asyncio.AsyncIOMotorClient(settings.mongo_uri)
-db = client.get_default_database() if client.get_default_database() else client.log_database
+# Extract database name from URI or use default
+db_name = settings.mongo_uri.split("/")[-1].split("?")[0] if "/" in settings.mongo_uri else "log_database"
+db = client[db_name] if db_name else client.log_database
 log_collection = db.logs
 
 # Model for JSON log input (for validation)
