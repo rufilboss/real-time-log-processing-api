@@ -8,17 +8,22 @@ celery_app = Celery(
     backend=settings.redis_url,
 )
 
+# Import tasks module to register tasks
+import app.tasks  # noqa: F401
+
 celery_app.conf.update(
-    task_routes={
-        "tasks.process_log": {"queue": "log_queue"} 
-    },
     result_expires=3600,
+    task_serializer='json',
+    accept_content=['json'],
+    result_serializer='json',
+    timezone='UTC',
+    enable_utc=True,
 )
 
-# Define a sample periodic task (optional, for future use)
-celery_app.conf.beat_schedule = {
-    "sample_task": {
-        "task": "tasks.process_log",
-        "schedule": 10.0,
-    },
-}
+# Note: Beat schedule disabled by default
+# celery_app.conf.beat_schedule = {
+#     "sample_task": {
+#         "task": "app.tasks.process_log",
+#         "schedule": 10.0,
+#     },
+# }
